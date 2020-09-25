@@ -18,7 +18,7 @@ class TxTransferActionView @JvmOverloads constructor(
 ) : LinearLayout(context, attrs, defStyleAttr) {
 
     init {
-        orientation = LinearLayout.VERTICAL
+        orientation = VERTICAL
         gravity = Gravity.LEFT
     }
 
@@ -26,12 +26,22 @@ class TxTransferActionView @JvmOverloads constructor(
         removeAllViews()
     }
 
-    fun setActionInfo(outgoing: Boolean, amount: String, logoUri: String, address: Solidity.Address) {
+    fun setActionInfo(
+        outgoing: Boolean,
+        amount: String,
+        logoUri: String,
+        address: Solidity.Address,
+        tokenId: String = ""
+    ) {
 
         clear()
 
         if (outgoing) {
-            addAmountItem(amount, logoUri, outgoing)
+            if (tokenId.isNotEmpty()) {
+                addErc721Item(logoUri, outgoing, tokenId, amount)
+            } else {
+                addAmountItem(amount, logoUri, outgoing)
+            }
         } else {
             addAddressItem(address)
         }
@@ -41,13 +51,26 @@ class TxTransferActionView @JvmOverloads constructor(
         if (outgoing) {
             addAddressItem(address)
         } else {
-            addAmountItem(amount, logoUri, outgoing)
+            if (tokenId.isNotEmpty()) {
+                addErc721Item(logoUri, outgoing, tokenId, amount)
+            } else {
+                addAmountItem(amount, logoUri, outgoing)
+            }
         }
+    }
+
+    private fun addErc721Item(logoUri: String, outgoing: Boolean, tokenId: String?, amount: String?) {
+        val tokenView = Erc721View(context)
+        val layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+        layoutParams.setMargins(dpToPx(DEFAULT_MARGIN), 0, 0, 0)
+        tokenView.layoutParams = layoutParams
+        tokenView.setToken(logoUri, tokenId, outgoing, amount)
+        addView(tokenView)
     }
 
     private fun addAmountItem(amount: String, logoUri: String, outgoing: Boolean) {
         val amountView = AmountView(context)
-        val color = if(outgoing) R.color.gnosis_dark_blue else R.color.safe_green
+        val color = if (outgoing) R.color.gnosis_dark_blue else R.color.safe_green
         val layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
         layoutParams.setMargins(dpToPx(DEFAULT_MARGIN), 0, 0, 0)
         amountView.layoutParams = layoutParams
@@ -57,7 +80,7 @@ class TxTransferActionView @JvmOverloads constructor(
 
     private fun addAddressItem(address: Solidity.Address) {
         val addressItem = AddressItem(context)
-        val layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(ITEM_HEIGHT))
+        val layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(ITEM_HEIGHT))
         layoutParams.setMargins(0, 0, 0, dpToPx(ADDRESS_BOTTOM_MARGIN))
         addressItem.layoutParams = layoutParams
         addressItem.address = address

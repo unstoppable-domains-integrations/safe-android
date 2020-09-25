@@ -14,7 +14,7 @@ android {
     defaultConfig {
         applicationId "io.gnosis.safe"
         versionCode getInt("APP_VERSION_CODE", 703)
-        versionName getKey("APP_VERSION_NAME", "0.4.2-alpha")
+        versionName getKey("APP_VERSION_NAME", "2.1.0")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         // Debug Settings
@@ -156,6 +156,7 @@ android {
 
 androidExtensions {
     experimental = true
+    features = []
 }
 
 dependencies {
@@ -258,9 +259,17 @@ dependencies {
 //    androidTestImplementation "androidx.navigation:navigation-testing:2.3.0-alpha05" //TODO change to stable when available
 
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:$versions.desugar_jdk_libs"
+
+    //debugImplementation "com.squareup.leakcanary:leakcanary-android:$versions.leak_canary"
 }
 
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile).all {
     kotlinOptions.freeCompilerArgs += ["-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi"]
+}
+
+task printVersion {
+    doLast {
+        println android.defaultConfig.versionName
+    }
 }

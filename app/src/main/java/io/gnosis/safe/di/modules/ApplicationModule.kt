@@ -21,6 +21,8 @@ import io.gnosis.safe.notifications.NotificationServiceApi
 import io.gnosis.safe.ui.base.AppDispatchers
 import io.gnosis.safe.ui.terms.TermsChecker
 import io.gnosis.safe.ui.transactions.paging.TransactionPagingProvider
+import io.gnosis.safe.utils.BalanceFormatter
+import io.gnosis.safe.utils.ParamSerializer
 import okhttp3.CertificatePinner
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -141,9 +143,9 @@ class ApplicationModule(private val application: Application) {
         OkHttpClient.Builder().apply {
             addInterceptor(interceptors[1])
             addInterceptor(interceptors[2])
-            connectTimeout(10, TimeUnit.SECONDS)
-            readTimeout(10, TimeUnit.SECONDS)
-            writeTimeout(10, TimeUnit.SECONDS)
+            connectTimeout(30, TimeUnit.SECONDS)
+            readTimeout(30, TimeUnit.SECONDS)
+            writeTimeout(30, TimeUnit.SECONDS)
             pingInterval(5, TimeUnit.SECONDS)
             certificatePinner(
                 CertificatePinner.Builder().apply {
@@ -173,10 +175,17 @@ class ApplicationModule(private val application: Application) {
 
     @Provides
     @Singleton
-    fun providesNotificationManager(@ApplicationContext context: Context, preferencesManager: PreferencesManager): NotificationManager = NotificationManager(context, preferencesManager)
+    fun providesNotificationManager(@ApplicationContext context: Context, preferencesManager: PreferencesManager, balanceFormatter: BalanceFormatter): NotificationManager = NotificationManager(context, preferencesManager, balanceFormatter)
 
     @Provides
     @Singleton
     fun providesConnectivityInfoProvider(connectivityManager: ConnectivityManager): ConnectivityInfoProvider =
         ConnectivityInfoProvider(connectivityManager)
+
+    @Provides
+    fun providesBalanceFormatter(): BalanceFormatter = BalanceFormatter()
+
+    @Provides
+    @Singleton
+    fun providesParamSerializer(moshi: Moshi): ParamSerializer = ParamSerializer(moshi)
 }

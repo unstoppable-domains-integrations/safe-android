@@ -1,7 +1,7 @@
 package io.gnosis.safe.utils
 
 import io.gnosis.data.backend.dto.DataDecodedDto
-import io.gnosis.data.backend.dto.ParamsDto
+import io.gnosis.data.backend.dto.ParamDto
 import io.gnosis.data.backend.dto.TransactionDirection
 import io.gnosis.data.models.TransactionInfo
 import io.gnosis.data.models.TransferInfo
@@ -17,24 +17,26 @@ import io.gnosis.data.repositories.SafeRepository.Companion.METHOD_SWAP_OWNER
 import io.gnosis.data.repositories.SafeRepository.Companion.SAFE_MASTER_COPY_1_1_1
 import io.gnosis.safe.R
 import io.gnosis.safe.ui.transactions.details.view.ActionInfoItem
-import junit.framework.Assert.assertEquals
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import pm.gnosis.crypto.utils.asEthereumAddressChecksumString
 import pm.gnosis.model.Solidity
 import pm.gnosis.utils.asEthereumAddress
-import pm.gnosis.utils.asEthereumAddressString
 import java.math.BigInteger
 
-private const val anyAddressString = "0x0000000000000000000000000000000000001234"
-private const val anotherAddressString = "0x0000000000000000000000000000000000004321"
+private val anyAddress = "0x0000000000000000000000000000000000001234".asEthereumAddress()!!
+private val anotherAddress = "0x0000000000000000000000000000000000004321".asEthereumAddress()!!
 
 class TxUtilsKtTest {
+
+    private val balanceFormatter: BalanceFormatter = BalanceFormatter()
+    private val DS = balanceFormatter.decimalSeparator
 
     @Test
     fun `formattedAmount (Unknown txInfo) should return 0 ETH`() {
 
         val txInfo = TransactionInfo.Unknown
-        val result = txInfo.formattedAmount()
+        val result = txInfo.formattedAmount(balanceFormatter)
 
         assertEquals("0 ETH", result)
     }
@@ -47,7 +49,7 @@ class TxUtilsKtTest {
             dataSize = 0,
             value = BigInteger.ZERO
         )
-        val result = txInfo.formattedAmount()
+        val result = txInfo.formattedAmount(balanceFormatter)
 
         assertEquals("0 ETH", result)
     }
@@ -61,7 +63,7 @@ class TxUtilsKtTest {
             direction = TransactionDirection.OUTGOING,
             transferInfo = buildTransferInfo(value = "1000000000000000000".toBigInteger())
         )
-        val result = txInfo.formattedAmount()
+        val result = txInfo.formattedAmount(balanceFormatter)
 
         assertEquals("-1 ETH", result)
     }
@@ -75,7 +77,7 @@ class TxUtilsKtTest {
             direction = TransactionDirection.OUTGOING,
             transferInfo = buildTransferInfo(value = BigInteger.ZERO)
         )
-        val result = txInfo.formattedAmount()
+        val result = txInfo.formattedAmount(balanceFormatter)
 
         assertEquals("0 ETH", result)
     }
@@ -89,9 +91,9 @@ class TxUtilsKtTest {
             direction = TransactionDirection.INCOMING,
             transferInfo = buildErc20TransferInfo(value = BigInteger.ZERO)
         )
-        val result = txInfo.formattedAmount()
+        val result = txInfo.formattedAmount(balanceFormatter)
 
-        assertEquals("+0.1 WETH", result)
+        assertEquals("+0${DS}1 WETH", result)
     }
 
     @Test
@@ -130,7 +132,7 @@ class TxUtilsKtTest {
             TransactionInfo.SettingsChange(
                 dataDecoded = DataDecodedDto(
                     method = METHOD_ADD_OWNER_WITH_THRESHOLD,
-                    parameters = listOf(ParamsDto("_threshold", "", "1"), ParamsDto("owner", "address", anyAddressString))
+                    parameters = listOf(ParamDto.ValueParam("uint256", "_threshold", "1"), ParamDto.AddressParam("address", "owner", anyAddress))
                 )
             )
 
@@ -139,7 +141,7 @@ class TxUtilsKtTest {
         assertEquals(2, result.size)
         assertEquals(R.string.tx_details_add_owner, result[0].itemLabel)
         val address = (result[0] as ActionInfoItem.Address)
-        assertEquals(anyAddressString, address.address?.asEthereumAddressChecksumString())
+        assertEquals(anyAddress, address.address)
         val value = (result[1] as ActionInfoItem.Value)
         assertEquals(R.string.tx_details_change_required_confirmations, value.itemLabel)
         assertEquals("1", value.value)
@@ -154,7 +156,7 @@ class TxUtilsKtTest {
                 dataDecoded = DataDecodedDto(
                     method = METHOD_ENABLE_MODULE,
                     parameters = listOf(
-                        ParamsDto("module", "address", anyAddressString)
+                        ParamDto.AddressParam("address", "module", anyAddress)
                     )
                 )
             )
@@ -164,7 +166,7 @@ class TxUtilsKtTest {
         assertEquals(R.string.tx_details_enable_module, result[0].itemLabel)
         assertEquals(1, result.size)
         val address = (result[0] as ActionInfoItem.Address)
-        assertEquals(anyAddressString, address.address?.asEthereumAddressChecksumString())
+        assertEquals(anyAddress, address.address)
     }
 
     @Test
@@ -174,7 +176,7 @@ class TxUtilsKtTest {
                 dataDecoded = DataDecodedDto(
                     method = METHOD_DISABLE_MODULE,
                     parameters = listOf(
-                        ParamsDto("module", "address", anyAddressString)
+                        ParamDto.AddressParam("address", "module", anyAddress)
                     )
                 )
             )
@@ -184,7 +186,7 @@ class TxUtilsKtTest {
         assertEquals(1, result.size)
         val address = (result[0] as ActionInfoItem.Address)
         assertEquals(R.string.tx_details_disable_module, address.itemLabel)
-        assertEquals(anyAddressString, address.address?.asEthereumAddressChecksumString())
+        assertEquals(anyAddress, address.address)
     }
 
     @Test
@@ -194,7 +196,7 @@ class TxUtilsKtTest {
                 dataDecoded = DataDecodedDto(
                     method = METHOD_CHANGE_MASTER_COPY,
                     parameters = listOf(
-                        ParamsDto("_masterCopy", "address", SAFE_MASTER_COPY_1_1_1.asEthereumAddressChecksumString())
+                        ParamDto.AddressParam("address", "_masterCopy", SAFE_MASTER_COPY_1_1_1)
                     )
                 )
             )
@@ -215,8 +217,8 @@ class TxUtilsKtTest {
                 dataDecoded = DataDecodedDto(
                     method = METHOD_SWAP_OWNER,
                     parameters = listOf(
-                        ParamsDto("oldOwner", "address", anyAddressString),
-                        ParamsDto("newOwner", "address", anotherAddressString)
+                        ParamDto.AddressParam("address", "oldOwner", anyAddress),
+                        ParamDto.AddressParam("address", "newOwner", anotherAddress)
                     )
                 )
             )
@@ -226,11 +228,11 @@ class TxUtilsKtTest {
         assertEquals(2, result.size)
         val addressOldOwner = (result[0] as ActionInfoItem.Address)
         assertEquals(R.string.tx_details_remove_owner, addressOldOwner.itemLabel)
-        assertEquals(anyAddressString.asEthereumAddress(), addressOldOwner.address)
+        assertEquals(anyAddress, addressOldOwner.address)
 
         val addressNewOwner = (result[1] as ActionInfoItem.Address)
         assertEquals(R.string.tx_details_add_owner, addressNewOwner.itemLabel)
-        assertEquals(anotherAddressString.asEthereumAddress(), addressNewOwner.address)
+        assertEquals(anotherAddress, addressNewOwner.address)
 
     }
 
@@ -241,8 +243,8 @@ class TxUtilsKtTest {
                 dataDecoded = DataDecodedDto(
                     method = METHOD_REMOVE_OWNER,
                     parameters = listOf(
-                        ParamsDto("owner", "address", anyAddressString),
-                        ParamsDto("_threshold", "", "2")
+                        ParamDto.AddressParam("address", "owner", anyAddress),
+                        ParamDto.ValueParam("uint256", "_threshold", "2")
                     )
                 )
             )
@@ -252,7 +254,7 @@ class TxUtilsKtTest {
         assertEquals(2, result.size)
         val addressOwner = (result[0] as ActionInfoItem.Address)
         assertEquals(R.string.tx_details_remove_owner, addressOwner.itemLabel)
-        assertEquals(anyAddressString.asEthereumAddress(), addressOwner.address)
+        assertEquals(anyAddress, addressOwner.address)
 
         val value = (result[1] as ActionInfoItem.Value)
         assertEquals(R.string.tx_details_change_required_confirmations, value.itemLabel)
@@ -266,7 +268,7 @@ class TxUtilsKtTest {
                 dataDecoded = DataDecodedDto(
                     method = METHOD_SET_FALLBACK_HANDLER,
                     parameters = listOf(
-                        ParamsDto("handler", "address", anyAddressString)
+                        ParamDto.AddressParam("address", "handler", anyAddress)
                     )
                 )
             )
@@ -276,7 +278,7 @@ class TxUtilsKtTest {
         assertEquals(1, result.size)
         val addressOwner = (result[0] as ActionInfoItem.AddressWithLabel)
         assertEquals(R.string.tx_details_set_fallback_handler, addressOwner.itemLabel)
-        assertEquals(anyAddressString.asEthereumAddress(), addressOwner.address)
+        assertEquals(anyAddress, addressOwner.address)
         assertEquals(null, addressOwner.addressLabel)
         assertEquals(R.string.tx_list_default_fallback_handler_unknown, addressOwner.addressLabelRes)
     }
@@ -288,7 +290,7 @@ class TxUtilsKtTest {
                 dataDecoded = DataDecodedDto(
                     method = METHOD_SET_FALLBACK_HANDLER,
                     parameters = listOf(
-                        ParamsDto("handler", "address", SafeRepository.DEFAULT_FALLBACK_HANDLER.asEthereumAddressString())
+                        ParamDto.AddressParam("address", "handler", SafeRepository.DEFAULT_FALLBACK_HANDLER)
                     )
                 )
             )
@@ -310,7 +312,7 @@ class TxUtilsKtTest {
                 dataDecoded = DataDecodedDto(
                     method = METHOD_CHANGE_THRESHOLD,
                     parameters = listOf(
-                        ParamsDto("_threshold", "", "4")
+                        ParamDto.ValueParam("uint256", "_threshold", "4")
                     )
                 )
             )
