@@ -355,5 +355,9 @@
         android:name="io.gnosis.safe.ui.settings.safe.AdvancedSafeSettingsFragment"
         android:label="AdvancedSafeSettingsFragment"
         tools:layout="@layout/fragment_settings_safe_advanced" />
+    <fragment
+        android:id="@+id/transactionsFragment"
+        android:name="io.gnosis.safe.ui.transactions.TransactionsFragment"
+        android:label="TransactionsFragment" />
 
 </navigation>

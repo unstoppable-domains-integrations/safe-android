@@ -21,6 +21,15 @@ class TransactionRepository(
     suspend fun loadTransactionsPage(pageLink: String): Page<Transaction> =
         gatewayApi.loadTransactionsPage(pageLink)
 
+    suspend fun loadTransactionsHistory(safeAddress: Solidity.Address): Page<UnifiedEntry> =
+        gatewayApi.loadTransactionsHistory(safeAddress.asEthereumAddressChecksumString())
+
+    suspend fun loadTransactionsQueue(safeAddress: Solidity.Address): Page<UnifiedEntry> =
+        gatewayApi.loadTransactionsQueue(safeAddress.asEthereumAddressChecksumString(), false)
+
+    suspend fun loadUnifiedTransactionsPage(pageLink: String): Page<UnifiedEntry> =
+        gatewayApi.loadUnifiedTransactionsPage(pageLink)
+
     suspend fun getTransactionDetails(txId: String): TransactionDetails =
         gatewayApi.loadTransactionDetails(txId)
 

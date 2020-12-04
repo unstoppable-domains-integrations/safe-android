@@ -4,6 +4,7 @@ import android.view.View
 import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import io.gnosis.data.models.transaction.ConflictType
 import io.gnosis.data.models.transaction.TransactionStatus
 import pm.gnosis.model.Solidity
 
@@ -11,6 +12,14 @@ sealed class TransactionView(
     open val status: TransactionStatus?,
     open val id: String
 ) {
+
+    data class Conflict(
+        val innerView: TransactionView,
+        val conflictType: ConflictType,
+        override val id: String = innerView.id,
+        override val status: TransactionStatus? = innerView.status
+    ) : TransactionView(status, id)
+
     data class Transfer(
         override val id: String,
         override val status: TransactionStatus,
@@ -154,7 +163,7 @@ sealed class TransactionView(
         val transactionHash: String
     )
 
-    data class SectionHeader(@StringRes val title: Int, override val id: String = "<unused>") : TransactionView(TransactionStatus.PENDING, id)
+    data class SectionHeader(val title: String, override val id: String = "<unused>") : TransactionView(TransactionStatus.PENDING, id)
 
     object Unknown : TransactionView(null, "<unused>")
 }

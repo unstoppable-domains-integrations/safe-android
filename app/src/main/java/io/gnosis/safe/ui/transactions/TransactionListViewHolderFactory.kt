@@ -4,8 +4,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.isVisible
 import androidx.navigation.Navigation
 import androidx.viewbinding.ViewBinding
+import io.gnosis.data.models.transaction.ConflictType
 import io.gnosis.safe.R
 import io.gnosis.safe.databinding.*
 import io.gnosis.safe.ui.base.adapter.Adapter
@@ -24,7 +26,8 @@ enum class TransactionViewType {
     CUSTOM_TRANSACTION,
     CUSTOM_TRANSACTION_QUEUED,
     SECTION_HEADER,
-    CREATION
+    CREATION,
+    CONFLICT
 }
 
 class TransactionViewHolderFactory : BaseFactory<BaseTransactionViewHolder<TransactionView>, TransactionView>() {
@@ -42,6 +45,7 @@ class TransactionViewHolderFactory : BaseFactory<BaseTransactionViewHolder<Trans
             TransactionViewType.CUSTOM_TRANSACTION_QUEUED.ordinal -> CustomTransactionQueuedViewHolder(viewBinding as ItemTxQueuedTransferBinding)
             TransactionViewType.SECTION_HEADER.ordinal -> SectionHeaderViewHolder(viewBinding as ItemTxSectionHeaderBinding)
             TransactionViewType.CREATION.ordinal -> CreationTransactionViewHolder(viewBinding as ItemTxSettingsChangeBinding)
+            TransactionViewType.CONFLICT.ordinal -> ConflictViewHolder(viewBinding as ItemTxConflictTxBinding, this)
             else -> throw UnsupportedViewType(javaClass.name)
         } as BaseTransactionViewHolder<TransactionView>
 
@@ -57,6 +61,7 @@ class TransactionViewHolderFactory : BaseFactory<BaseTransactionViewHolder<Trans
             TransactionViewType.CUSTOM_TRANSACTION_QUEUED.ordinal -> ItemTxQueuedTransferBinding.inflate(layoutInflater, parent, false)
             TransactionViewType.SECTION_HEADER.ordinal -> ItemTxSectionHeaderBinding.inflate(layoutInflater, parent, false)
             TransactionViewType.CREATION.ordinal -> ItemTxSettingsChangeBinding.inflate(layoutInflater, parent, false)
+            TransactionViewType.CONFLICT.ordinal -> ItemTxConflictTxBinding.inflate(layoutInflater, parent, false)
             else -> throw UnsupportedViewType(javaClass.name)
         }
 
@@ -72,11 +77,27 @@ class TransactionViewHolderFactory : BaseFactory<BaseTransactionViewHolder<Trans
             is TransactionView.CustomTransaction -> TransactionViewType.CUSTOM_TRANSACTION
             is TransactionView.CustomTransactionQueued -> TransactionViewType.CUSTOM_TRANSACTION_QUEUED
             is TransactionView.Creation -> TransactionViewType.CREATION
+            is TransactionView.Conflict -> TransactionViewType.CONFLICT
             is TransactionView.Unknown -> throw UnsupportedViewType(javaClass.name)
         }.ordinal
 }
 
 abstract class BaseTransactionViewHolder<T : TransactionView>(viewBinding: ViewBinding) : Adapter.ViewHolder<T>(viewBinding.root)
+
+class ConflictViewHolder(private val viewBinding: ItemTxConflictTxBinding, private val factory: TransactionViewHolderFactory) :
+    BaseTransactionViewHolder<TransactionView.Conflict>(viewBinding) {
+    override fun bind(data: TransactionView.Conflict, payloads: List<Any>) {
+        viewBinding.txContainer.removeAllViews()
+        val viewType = factory.viewTypeFor(data.innerView)
+        val innerBinding = factory.layout(LayoutInflater.from(viewBinding.txContainer.context), viewBinding.txContainer, viewType)
+        val innerViewHolder = factory.newViewHolder(innerBinding, viewType)
+        innerViewHolder.bind(data.innerView, payloads)
+
+        viewBinding.txContainer.addView(innerBinding.root)
+
+        viewBinding.lineBottom.isVisible = data.conflictType != ConflictType.End
+    }
+}
 
 class TransferViewHolder(private val viewBinding: ItemTxTransferBinding) :
     BaseTransactionViewHolder<TransactionView.Transfer>(viewBinding) {
@@ -377,7 +398,7 @@ class SectionHeaderViewHolder(private val viewBinding: ItemTxSectionHeaderBindin
 
     override fun bind(sectionHeader: TransactionView.SectionHeader, payloads: List<Any>) {
         with(viewBinding) {
-            sectionTitle.setText(sectionHeader.title)
+            sectionTitle.text = sectionHeader.title
         }
     }
 }

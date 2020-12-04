@@ -1,5 +1,6 @@
 package io.gnosis.safe.ui.transactions
 
+import android.graphics.Rect
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,7 +19,9 @@ import io.gnosis.data.models.Safe
 import io.gnosis.safe.R
 import io.gnosis.safe.ScreenId
 import io.gnosis.safe.databinding.FragmentTransactionListBinding
+import io.gnosis.safe.databinding.ItemTxConflictTxBinding
 import io.gnosis.safe.di.components.ViewComponent
+import io.gnosis.safe.qrscanner.nullOnThrow
 import io.gnosis.safe.toError
 import io.gnosis.safe.ui.base.BaseStateViewModel.ViewAction.ShowError
 import io.gnosis.safe.ui.base.SafeOverviewBaseFragment
@@ -40,6 +43,7 @@ class TransactionListFragment : SafeOverviewBaseFragment<FragmentTransactionList
     private val adapter by lazy { TransactionViewListAdapter(TransactionViewHolderFactory()) }
     private val noSafeFragment by lazy { NoSafeFragment.newInstance(NoSafeFragment.Position.TRANSACTIONS) }
 
+    private var history: Boolean = true
     private var reload: Boolean = false
 
     override fun inject(component: ViewComponent) {
@@ -50,6 +54,11 @@ class TransactionListFragment : SafeOverviewBaseFragment<FragmentTransactionList
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?): FragmentTransactionListBinding =
         FragmentTransactionListBinding.inflate(inflater, container, false)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        viewModel.init(arguments?.getBoolean(ARG_HISTORY_VIEW, true) ?: true)
+    }
 
     @ExperimentalPagingApi
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -99,9 +108,15 @@ class TransactionListFragment : SafeOverviewBaseFragment<FragmentTransactionList
                 footer = TransactionLoadStateAdapter { this@TransactionListFragment.adapter.retry() }
             )
             layoutManager = LinearLayoutManager(requireContext())
-            addItemDecoration(DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL))
+            addItemDecoration(object : RecyclerView.ItemDecoration() {
+                override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
+                    super.getItemOffsets(outRect, view, parent, state)
+                    if (nullOnThrow { parent.getChildViewHolder(view) } is ConflictViewHolder) return
+                    outRect[0, 0, 0] = context.resources.getDimension(R.dimen.item_separator_height).toInt()
+                }
+            })
         }
-        binding.refresh.setOnRefreshListener { viewModel.load() }
+        binding.refresh.setOnRefreshListener { viewModel.load(history) }
 
         viewModel.state.observe(viewLifecycleOwner, Observer { state ->
 
@@ -136,7 +151,7 @@ class TransactionListFragment : SafeOverviewBaseFragment<FragmentTransactionList
     override fun onResume() {
         super.onResume()
         if (reload) {
-            viewModel.load()
+            viewModel.load(history)
         }
     }
 
@@ -181,6 +196,18 @@ class TransactionListFragment : SafeOverviewBaseFragment<FragmentTransactionList
         navHandler?.setSafeData(safe)
         if (safe != null) {
             childFragmentManager.beginTransaction().remove(noSafeFragment).commitNow()
+        }
+    }
+
+    companion object {
+        private const val ARG_HISTORY_VIEW = "arg.boolean.history_view"
+
+        fun newHistoryInstance() = TransactionListFragment().apply {
+            arguments = Bundle().apply { putBoolean(ARG_HISTORY_VIEW, true) }
+        }
+
+        fun newQueueInstance() = TransactionListFragment().apply {
+            arguments = Bundle().apply { putBoolean(ARG_HISTORY_VIEW, false) }
         }
     }
 }

@@ -7,6 +7,7 @@ import io.gnosis.data.models.assets.Collectible
 import io.gnosis.data.models.transaction.Transaction
 import io.gnosis.data.models.transaction.TransactionConfirmationRequest
 import io.gnosis.data.models.transaction.TransactionDetails
+import io.gnosis.data.models.transaction.UnifiedEntry
 import retrofit2.http.*
 
 interface GatewayApi {
@@ -31,6 +32,16 @@ interface GatewayApi {
 
     @GET("v1/safes/{safeAddress}/collectibles")
     suspend fun loadCollectibles(@Path("safeAddress") safeAddress: String): List<Collectible>
+
+    // Unified endpoints
+    @GET("v1/safes/{address}/transactions/history")
+    suspend fun loadTransactionsHistory(@Path("address") address: String): Page<UnifiedEntry>
+
+    @GET("v1/safes/{address}/transactions/queued")
+    suspend fun loadTransactionsQueue(@Path("address") address: String, @Query("trusted") trusted: Boolean): Page<UnifiedEntry>
+
+    @GET
+    suspend fun loadUnifiedTransactionsPage(@Url pageLink: String): Page<UnifiedEntry>
 
     companion object {
         const val BASE_URL = BuildConfig.CLIENT_GATEWAY_URL

@@ -25,6 +25,7 @@ import io.gnosis.safe.ui.settings.owner.list.OwnerSelectionFragment
 import io.gnosis.safe.ui.splash.SplashActivity
 import io.gnosis.safe.ui.terms.TermsBottomSheetDialog
 import io.gnosis.safe.ui.transactions.TransactionListFragment
+import io.gnosis.safe.ui.transactions.TransactionsFragment
 import io.gnosis.safe.ui.transactions.details.*
 
 @ForView
@@ -90,4 +91,5 @@ interface ViewComponent {
     fun inject(dialog: ShareSafeDialog)
 
     fun inject(creationTransactionDetailsFragment: CreationTransactionDetailsFragment)
+    fun inject(transactionsFragment: TransactionsFragment)
 }
