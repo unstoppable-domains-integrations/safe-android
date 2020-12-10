@@ -1,7 +1,5 @@
 package io.gnosis.data.models.transaction
 
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonQualifier
 import io.gnosis.data.models.transaction.Transaction as TransactionSummary
 
 import java.util.*
@@ -15,21 +13,21 @@ enum class UnifiedEntryType {
 }
 
 enum class ConflictType {
-    @Json(name = "none") None,
-    @Json(name = "hasNext") HasNext,
-    @Json(name = "end") End
+    None,
+    HasNext,
+    End
 }
 
 enum class LabelType {
-    @Json(name = "NEXT") Next,
-    @Json(name = "QUEUED") Queued
+    Next,
+    Queued
 }
 
-sealed class UnifiedEntry(@Json(name = "tx_item_type") val type: UnifiedEntryType) {
+sealed class UnifiedEntry(val type: UnifiedEntryType) {
 
     data class Transaction(
-        @Json(name = "transaction_summary") val transaction: TransactionSummary,
-        @Json(name = "conflict_type") val conflictType: ConflictType
+        val transaction: TransactionSummary,
+        val conflictType: ConflictType
     ) : UnifiedEntry(UnifiedEntryType.TRANSACTION)
 
     data class DateLabel(

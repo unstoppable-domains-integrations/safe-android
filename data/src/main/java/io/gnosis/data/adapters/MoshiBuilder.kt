@@ -37,7 +37,7 @@ internal val settingsInfoAdapter =
         .withSubtype(SettingsInfo.DisableModule::class.java, SettingsInfoType.DISABLE_MODULE.name)
 
 internal val unifiedEntryAdapter =
-    PolymorphicJsonAdapterFactory.of(UnifiedEntry::class.java, "tx_item_type")
+    PolymorphicJsonAdapterFactory.of(UnifiedEntry::class.java, "type")
         .withSubtype(UnifiedEntry.Transaction::class.java, UnifiedEntryType.TRANSACTION.name)
         .withSubtype(UnifiedEntry.DateLabel::class.java, UnifiedEntryType.DATE_LABEL.name)
         .withSubtype(UnifiedEntry.Label::class.java, UnifiedEntryType.LABEL.name)
